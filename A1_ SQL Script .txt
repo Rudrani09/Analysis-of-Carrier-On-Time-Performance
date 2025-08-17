@@ -240,4 +240,5 @@ WHERE
 GROUP BY 
     MONTH(DATE_PARSE(fl_date, '%m/%d/%Y %I:%i:%s %p'))
 ORDER BY 
+
     flight_month ASC;
