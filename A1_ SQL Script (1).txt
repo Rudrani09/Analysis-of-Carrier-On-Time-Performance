@@ -1,0 +1,243 @@
+﻿A1: SQL Script
+Rudrani Sakhare
+MBAN 2
+
+
+
+
+– 
+
+
+--- People by city-to-city travel monthly for 2023 converting later to quarterly
+
+
+
+
+SELECT
+    month,
+    origin_city_name AS depart_city,
+    aci.description AS destination_city,
+    COUNT(*) AS flight_count
+FROM 
+    "AwsDataCatalog"."business analysis"."202301"  df
+JOIN 
+    city_market_id aci
+ON 
+    aci.code = df.dest_city_market_id
+WHERE 
+    month = 12 -- Filter for months
+GROUP BY 
+    month, origin_city_name, aci.description
+ORDER BY 
+    month ASC, flight_count DESC;
+    
+
+
+-- Weather delay by airline for 2024
+
+
+SELECT 
+    flights.origin_airport_id,
+    airports.description AS airport_name,
+    COUNT(*) AS total_flights,
+    COUNT(CASE WHEN flights.weather_delay > 0 THEN 1 END) * 100.0 / COUNT(*) AS weather_delay_percentage
+FROM 
+    "AwsDataCatalog"."business analysis"."202401" AS flights
+JOIN    
+    "AwsDataCatalog"."business analysis"."airport_id" AS airports
+ON 
+    flights.origin_airport_id = airports.code – Joined on to airport ID
+GROUP BY 
+    flights.origin_airport_id, airports.description
+ORDER BY 
+    weather_delay_percentage DESC
+    LIMIT 10;
+
+
+
+
+-- Best day of the month to travel
+
+
+SELECT 
+    day_of_month,
+    COUNT(*) AS total_flights,
+    AVG(dep_delay) AS avg_dep_delay_times,
+    AVG(dep_delay_new) AS avg_arr_delay_times
+FROM 
+    "AwsDataCatalog"."business analysis"."202301"
+GROUP BY 
+    day_of_month
+ORDER BY 
+    avg_dep_delay_times ASC;
+
+
+
+
+-- per Airline Weather delay percentage
+
+
+SELECT 
+    origin AS airport,
+    COUNT(CASE WHEN weather_delay > 0 THEN 1 END) * 100.0 / COUNT(*) AS weather_delay_percentage
+FROM 
+    "AwsDataCatalog"."business analysis"."202301"
+WHERE fl_date LIKE '%2023%'
+GROUP BY 
+    origin
+ORDER BY 
+    weather_delay_percentage DESC
+LIMIT 10;
+
+
+
+
+
+
+
+
+– Older Planes data by delayed flights 
+SELECT 
+    tail_num AS airplane_id,
+    (AVG(CASE WHEN dep_delay > 0 THEN dep_delay END)) AS avg_delay,
+    COUNT(*) AS total_flights
+FROM 
+    "AwsDataCatalog"."business analysis"."202301" -- Replace with your table name
+WHERE 
+    tail_num IS NOT NULL -- Exclude rows with missing tail numbers
+GROUP BY 
+    tail_num
+ORDER BY 
+    avg_delay DESC
+;
+
+
+
+
+
+
+
+
+-- Best day of the week to travel
+
+
+SELECT 
+    day_of_week,
+    COUNT(*) AS total_flights,
+    AVG(dep_delay) AS avg_dep_delay_times,
+    AVG(dep_delay_new) AS avg_arr_delay_times
+FROM 
+    "AwsDataCatalog"."business analysis"."202301"
+GROUP BY 
+    day_of_week
+ORDER BY 
+    avg_dep_delay_times ASC;
+
+
+
+
+-- Best month to travel
+
+
+SELECT 
+    month,
+    COUNT(*) AS total_flights,
+    AVG(dep_delay) AS avg_dep_delay_times,
+    AVG(dep_delay_new) AS avg_arr_delay_times
+FROM 
+    "AwsDataCatalog"."business analysis"."202301"
+GROUP BY 
+    month
+ORDER BY 
+    avg_dep_delay_times ASC;
+
+
+-- Ranking of airlines by year 2024
+SELECT 
+    mkt_unique_carrier AS airline_code,
+    COUNT(*) AS total_flights
+FROM 
+    "AwsDataCatalog"."business analysis"."202401"
+    WHERE fl_date like '%2024%'
+GROUP BY 
+     mkt_unique_carrier
+ORDER BY 
+    total_flights DESC;
+
+
+
+-- Best time of the day week 
+SELECT
+    CASE
+        WHEN CAST(SUBSTR(crs_dep_time, 1, 2) AS INT) * 100 + CAST(SUBSTR(crs_dep_time, 3, 2) AS INT) BETWEEN 0400 AND 1159 THEN 'Morning'
+        WHEN CAST(SUBSTR(crs_dep_time, 1, 2) AS INT) * 100 + CAST(SUBSTR(crs_dep_time, 3, 2) AS INT) BETWEEN 1200 AND 1559 THEN 'AFternoon'
+        WHEN CAST(SUBSTR(crs_dep_time, 1, 2) AS INT) * 100 + CAST(SUBSTR(crs_dep_time, 3, 2) AS INT) BETWEEN 1600 AND 1959 THEN 'Evening'
+        WHEN CAST(SUBSTR(crs_dep_time, 1, 2) AS INT) * 100 + CAST(SUBSTR(crs_dep_time, 3, 2) AS INT) BETWEEN 2000 AND 2359 THEN 'Night'
+        ELSE 'Midnight'
+    END AS time_of_day,
+    AVG(dep_delay) AS avg_dep_delay,
+    AVG(arr_delay) AS avg_arr_delay
+FROM "AwsDataCatalog"."business analysis"."202301"
+WHERE LENGTH(crs_dep_time) = 4 -- Ensures crs_dep_time is valid (e.g., '0648')
+GROUP BY 
+    CASE
+        WHEN CAST(SUBSTR(crs_dep_time, 1, 2) AS INT) * 100 + CAST(SUBSTR(crs_dep_time, 3, 2) AS INT) BETWEEN 400 AND 1159 THEN 'Morning'
+        WHEN CAST(SUBSTR(crs_dep_time, 1, 2) AS INT) * 100 + CAST(SUBSTR(crs_dep_time, 3, 2) AS INT) BETWEEN 1200 AND 1559 THEN 'AFternoon'
+        WHEN CAST(SUBSTR(crs_dep_time, 1, 2) AS INT) * 100 + CAST(SUBSTR(crs_dep_time, 3, 2) AS INT) BETWEEN 1600 AND 1959 THEN 'Evening'
+        WHEN CAST(SUBSTR(crs_dep_time, 1, 2) AS INT) * 100 + CAST(SUBSTR(crs_dep_time, 3, 2) AS INT) BETWEEN 2000 AND 2359 THEN 'Night'
+        ELSE 'Midnight'
+    END
+ORDER BY avg_dep_delay;
+
+
+
+
+
+
+-- Ranking of airlines by year 2023
+SELECT 
+    mkt_unique_carrier AS airline_code,
+    COUNT(*) AS total_flights
+FROM 
+    "AwsDataCatalog"."business analysis"."202301"
+    WHERE fl_date like '%2023%'
+GROUP BY 
+     mkt_unique_carrier
+ORDER BY 
+    total_flights DESC;
+
+
+
+
+
+
+-- Seasonal Trends for flights delays and numbers
+
+
+SELECT 
+    month,
+    COUNT(*) AS total_flights,
+    AVG(dep_delay) AS avg_dep_delay,
+    AVG(arr_delay) AS avg_arr_delay
+FROM 
+    "AwsDataCatalog"."business analysis"."202301"
+GROUP BY 
+    month
+ORDER BY 
+    month ASC;
+
+
+-- MOnthly flights data 
+
+
+SELECT 
+    MONTH(DATE_PARSE(fl_date, '%m/%d/%Y %I:%i:%s %p')) AS flight_month,
+    COUNT(*) AS total_flights
+FROM 
+    "AwsDataCatalog"."business analysis"."202401"
+WHERE 
+    YEAR(DATE_PARSE(fl_date, '%m/%d/%Y %I:%i:%s %p')) = 2024
+GROUP BY 
+    MONTH(DATE_PARSE(fl_date, '%m/%d/%Y %I:%i:%s %p'))
+ORDER BY 
+    flight_month ASC;
